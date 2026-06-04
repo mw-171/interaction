@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { SiteHeader } from "./components/site-header";
+
+const fraunces = localFont({
+  variable: "--font-fraunces",
+  display: "swap",
+  src: [{ path: "./fonts/Fraunces-variable.woff2", style: "normal" }],
+});
 
 const openRunde = localFont({
   variable: "--font-open-runde",
@@ -42,9 +49,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${openRunde.variable} h-full antialiased`}
+      className={`${openRunde.variable} ${fraunces.variable} h-full antialiased bg-[rgb(255,253,250)] dark:bg-[rgb(16,16,18)]`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[rgb(255,253,250)] dark:bg-[rgb(16,16,18)]">
+          <SiteHeader />
+          <div className="pt-[83px]">{children}</div>
+        </body>
     </html>
   );
 }
