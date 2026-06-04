@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, FilePen, Plus } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 
 function formatRelativeTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -39,10 +39,9 @@ export function ActivityRowSkeleton({ isLast = false }: { isLast?: boolean }) {
 
 export interface ActivityDetail {
   id: string;
-  content: string;
-  type: string;
-  typeColor?: "green" | "blue" | "purple" | "orange";
-  onExpand?: () => void;
+  label: string;
+  href?: string;
+  icon?: React.ReactNode;
 }
 
 export interface ActivityRowProps {
@@ -57,13 +56,6 @@ export interface ActivityRowProps {
   isLast?: boolean;
 }
 
-const typeColorMap: Record<string, string> = {
-  green: "text-green-500 dark:text-green-400",
-  blue: "text-blue-500 dark:text-blue-400",
-  purple: "text-purple-500 dark:text-purple-400",
-  orange: "text-orange-500 dark:text-orange-400",
-};
-
 export function ActivityRow({
   icon,
   iconColor = "text-neutral-400 dark:text-neutral-500",
@@ -76,23 +68,13 @@ export function ActivityRow({
   isLast = false,
 }: ActivityRowProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-
-  const toggleItem = (id: string) => {
-    setExpandedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const hasDetails = details && details.length > 0;
   const isoString =
     typeof timestamp === "string" ? timestamp : timestamp.toISOString();
 
   return (
-    <div className="group relative flex items-start gap-3 md:gap-4">
+    <div className="relative flex items-start gap-3 md:gap-4">
       {!isLast && (
         <div className="absolute top-6 left-[13px] h-full w-px bg-neutral-200 dark:bg-neutral-800" />
       )}
@@ -108,23 +90,12 @@ export function ActivityRow({
       <div className="min-w-0 flex-1 pb-6">
         {/* Header row */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
-            <p className="text-[14px] leading-snug text-neutral-700 dark:text-neutral-300">
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                {actor}
-              </span>{" "}
-              {action}
-            </p>
-            {onRevert && (
-              <button
-                type="button"
-                onClick={onRevert}
-                className="shrink-0 rounded-md px-2 py-0.5 text-[12px] font-medium text-neutral-400 opacity-0 transition-[opacity,color,background-color] duration-150 ease-out hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:text-neutral-500 dark:hover:bg-red-500/10 dark:hover:text-red-400 motion-reduce:transition-none"
-              >
-                Undo
-              </button>
-            )}
-          </div>
+          <p className="text-[14px] leading-snug text-neutral-700 dark:text-neutral-300">
+            <span className="font-medium text-neutral-900 dark:text-neutral-100">
+              {actor}
+            </span>{" "}
+            {action}
+          </p>
           <time
             dateTime={isoString}
             className="shrink-0 text-[13px] tabular-nums text-neutral-400 dark:text-neutral-500"
@@ -140,7 +111,7 @@ export function ActivityRow({
           </p>
         )}
 
-        {/* Details section */}
+        {/* Details toggle */}
         {hasDetails && (
           <div className="mt-1">
             <button
@@ -151,10 +122,9 @@ export function ActivityRow({
               <ChevronDown
                 className={`size-3.5 transition-transform duration-200 ease-out motion-reduce:transition-none ${showDetails ? "rotate-180" : ""}`}
               />
-              {showDetails ? "Hide details" : "Show details"}
+              {details.length} added
             </button>
 
-            {/* grid-template-rows trick: avoids animating height directly */}
             <div
               className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
                 showDetails
@@ -163,66 +133,46 @@ export function ActivityRow({
               }`}
             >
               <div className="min-h-0 overflow-hidden">
-                <div className="mt-2 flex flex-col rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/50">
-                  {details.map((item, i) => {
-                    const isExpanded = expandedItems.has(item.id);
-                    const iconClass =
-                      typeColorMap[item.typeColor ?? "green"] ??
-                      typeColorMap.green;
-                    return (
-                      <div
-                        key={item.id}
-                        className={i > 0 ? "border-t border-neutral-200 dark:border-neutral-800" : ""}
-                      >
-                        {/* Header row — always shows truncated preview */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            toggleItem(item.id);
-                            item.onExpand?.();
-                          }}
-                          className="flex w-full items-start gap-2 px-3 py-2 text-left cursor-pointer transition-colors duration-150 ease hover:bg-neutral-100 dark:hover:bg-neutral-800/50"
+                <div className="mt-2">
+                  {/* Integration bubbles */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {details.map((item) =>
+                      item.href ? (
+                        <a
+                          key={item.id}
+                          href={item.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[13px] text-neutral-600 transition-colors duration-150 ease hover:bg-neutral-100 hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:bg-neutral-800/70"
                         >
-                          <FilePen className="mt-px size-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" />
-                          <span className="min-w-0 text-[13px] text-neutral-600 dark:text-neutral-400 line-clamp-1">
-                            {item.content}
-                          </span>
-                          <span className="ml-auto flex shrink-0 items-center gap-1.5">
-                            <Plus className={`size-3.5 ${iconClass}`} />
-                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                              {item.type}
-                            </span>
-                            <ChevronDown
-                              className={`size-3 text-neutral-400 transition-transform duration-200 ease-out motion-reduce:transition-none dark:text-neutral-500 ${
-                                isExpanded ? "rotate-180" : ""
-                              }`}
-                            />
-                          </span>
-                        </button>
-
-                        {/* Expanded content — grid reveal below header */}
+                          {item.icon && <span className="shrink-0">{item.icon}</span>}
+                          {item.label}
+                          <ArrowUpRight className="size-3 text-neutral-400 dark:text-neutral-500" />
+                        </a>
+                      ) : (
                         <div
-                          className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
-                            isExpanded
-                              ? "[grid-template-rows:1fr]"
-                              : "[grid-template-rows:0fr]"
-                          }`}
+                          key={item.id}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[13px] text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400"
                         >
-                          <div className="min-h-0 overflow-hidden">
-                            <div className="px-3 pt-1.5 pb-2.5 pl-[30px]">
-                              <p
-                                className={`whitespace-pre-wrap text-[12px] leading-relaxed text-neutral-500 dark:text-neutral-400 transition-opacity duration-150 delay-75 motion-reduce:transition-none ${
-                                  isExpanded ? "opacity-100" : "opacity-0"
-                                }`}
-                              >
-                                {item.content}
-                              </p>
-                            </div>
-                          </div>
+                          {item.icon && <span className="shrink-0">{item.icon}</span>}
+                          {item.label}
                         </div>
-                      </div>
-                    );
-                  })}
+                      )
+                    )}
+                  </div>
+
+                  {/* Undo */}
+                  {onRevert && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={onRevert}
+                        className="rounded-md px-2 py-0.5 text-[12px] font-medium text-neutral-400 transition-colors duration-150 ease-out hover:bg-red-50 hover:text-red-600 dark:text-neutral-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                      >
+                        Undo
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
