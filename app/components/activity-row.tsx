@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown, FilePen, Plus } from "lucide-react";
 
 function formatRelativeTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -13,78 +14,6 @@ function formatRelativeTime(date: Date | string): string {
   if (hours > 0) return `${hours}h ago`;
   if (minutes > 0) return `${minutes}m ago`;
   return "just now";
-}
-
-function ChevronIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      aria-hidden="true"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M8 10L11.2929 13.2929C11.6834 13.6834 12.3166 13.6834 12.7071 13.2929L16 10"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function FileEditIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      aria-hidden="true"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M11 4H7.2C6.0799 4 5.51984 4 5.09202 4.21799C4.71569 4.40973 4.40973 4.71569 4.21799 5.09202C4 5.51984 4 6.0799 4 7.2V16.8C4 17.9201 4 18.4802 4.21799 18.908C4.40973 19.2843 4.71569 19.5903 5.09202 19.782C5.51984 20 6.0799 20 7.2 20H16.8C17.9201 20 18.4802 20 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V13"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M13 10.9999V7.99994L17.5858 3.41416C18.3668 2.63311 19.6332 2.63311 20.4142 3.41416L20.5858 3.58573C21.3668 4.36678 21.3668 5.63311 20.5858 6.41416L16 10.9999H13Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      aria-hidden="true"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M12 7V12M12 12V17M12 12H7M12 12H17"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
 }
 
 export function ActivityRowSkeleton({ isLast = false }: { isLast?: boolean }) {
@@ -147,6 +76,16 @@ export function ActivityRow({
   isLast = false,
 }: ActivityRowProps) {
   const [showDetails, setShowDetails] = useState(true);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  const toggleItem = (id: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const hasDetails = details && details.length > 0;
   const isoString =
@@ -209,45 +148,77 @@ export function ActivityRow({
               onClick={() => setShowDetails((v) => !v)}
               className="flex items-center gap-1 text-[13px] text-neutral-400 transition-colors duration-150 ease hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
             >
-              <ChevronIcon
-                className={`size-3.5 transition-transform duration-200 ease-out ${showDetails ? "rotate-180" : ""}`}
+              <ChevronDown
+                className={`size-3.5 transition-transform duration-200 ease-out motion-reduce:transition-none ${showDetails ? "rotate-180" : ""}`}
               />
               {showDetails ? "Hide details" : "Show details"}
             </button>
 
-            {showDetails && (
-              <div className="mt-2 flex flex-col rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/50">
-                {details.map((item, i) => {
-                  const iconClass =
-                    typeColorMap[item.typeColor ?? "green"] ??
-                    typeColorMap.green;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={item.onExpand}
-                      className={`flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 ease hover:bg-neutral-100 dark:hover:bg-neutral-800/50 ${
-                        i > 0
-                          ? "border-t border-neutral-200 dark:border-neutral-800"
-                          : ""
-                      }`}
-                    >
-                      <FileEditIcon className="mt-px size-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" />
-                      <span className="min-w-0 text-[13px] text-neutral-600 dark:text-neutral-400 line-clamp-1">
-                        {item.content}
-                      </span>
-                      <span className="ml-auto flex shrink-0 items-center gap-1.5">
-                        <PlusIcon className={`size-3.5 ${iconClass}`} />
-                        <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                          {item.type}
+            {/* grid-template-rows trick: avoids animating height directly */}
+            <div
+              className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${
+                showDetails
+                  ? "[grid-template-rows:1fr] opacity-100"
+                  : "[grid-template-rows:0fr] opacity-0"
+              }`}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <div className="mt-2 flex flex-col rounded-lg border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/50">
+                  {details.map((item, i) => {
+                    const isExpanded = expandedItems.has(item.id);
+                    const iconClass =
+                      typeColorMap[item.typeColor ?? "green"] ??
+                      typeColorMap.green;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          toggleItem(item.id);
+                          item.onExpand?.();
+                        }}
+                        className={`flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 ease hover:bg-neutral-100 dark:hover:bg-neutral-800/50 ${
+                          i > 0
+                            ? "border-t border-neutral-200 dark:border-neutral-800"
+                            : ""
+                        } ${isExpanded ? "bg-neutral-100/60 dark:bg-neutral-800/30" : ""}`}
+                      >
+                        <FilePen className="mt-px size-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                        {/* max-height transition for text expand — opacity layered on top for polish */}
+                        <div
+                          className={`min-w-0 overflow-hidden transition-[max-height,opacity] duration-200 ease-out motion-reduce:transition-none ${
+                            isExpanded
+                              ? "max-h-[500px] opacity-100"
+                              : "max-h-[1.25rem] opacity-100"
+                          }`}
+                        >
+                          <span
+                            className={`text-[13px] text-neutral-600 dark:text-neutral-400 ${
+                              isExpanded
+                                ? "whitespace-pre-wrap break-words"
+                                : "line-clamp-1"
+                            }`}
+                          >
+                            {item.content}
+                          </span>
+                        </div>
+                        <span className="ml-auto flex shrink-0 items-center gap-1.5 self-start pt-px">
+                          <Plus className={`size-3.5 ${iconClass}`} />
+                          <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                            {item.type}
+                          </span>
+                          <ChevronDown
+                            className={`size-3 text-neutral-400 transition-transform duration-200 ease-out motion-reduce:transition-none dark:text-neutral-500 ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
                         </span>
-                        <ChevronIcon className="size-3 text-neutral-400 dark:text-neutral-500" />
-                      </span>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>

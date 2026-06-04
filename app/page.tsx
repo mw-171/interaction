@@ -1,47 +1,54 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Plug, RefreshCw, Utensils } from "lucide-react";
 import { ActivityRow, ActivityRowSkeleton, type ActivityRowProps } from "./components/activity-row";
 
-function UtensilsIcon() {
+// Brand icons via icons8 CDN — sized at 48px for retina, constrained to 16px via CSS
+function GmailIcon() {
   return (
-    <svg
-      className="size-[16px]"
-      aria-hidden="true"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M5 4V10.1716C5 10.702 5.21071 11.2107 5.58579 11.5858L5.91421 11.9142C6.28929 12.2893 6.5 12.798 6.5 13.3284V18.5C6.5 19.3284 7.17157 20 8 20C8.82843 20 9.5 19.3284 9.5 18.5V13.3284C9.5 12.798 9.71071 12.2893 10.0858 11.9142L10.4142 11.5858C10.7893 11.2107 11 10.702 11 10.1716V4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8 4V9"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M19 18.5V4C18.105 4 14.9094 6.46963 14.0177 12.9027C13.8605 14.037 14.7698 15 15.8997 15H16.0409V18.5C16.0409 19.3284 16.7033 20 17.5204 20C18.3376 20 19 19.3284 19 18.5Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <img
+      width={48}
+      height={48}
+      src="https://img.icons8.com/fluency/48/gmail-new.png"
+      alt="Gmail"
+      className="size-4"
+    />
   );
+}
+
+function GoogleCalendarIcon() {
+  return (
+    <img
+      width={48}
+      height={48}
+      src="https://img.icons8.com/fluency/48/google-calendar--v1.png"
+      alt="Google Calendar"
+      className="size-4"
+    />
+  );
+}
+
+function GitHubIcon() {
+  return (
+    <img
+      width={48}
+      height={48}
+      src="https://img.icons8.com/ios-filled/48/github.png"
+      alt="GitHub"
+      className="size-4 dark:invert"
+    />
+  );
+}
+
+// Generic lucide icons
+function LucideIcon({ icon: Icon, className }: { icon: React.ElementType; className?: string }) {
+  return <Icon size={16} className={className} aria-hidden="true" />;
 }
 
 const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
   {
-    icon: <UtensilsIcon />,
+    icon: <LucideIcon icon={Utensils} />,
     iconColor: "text-green-500",
     actor: "you",
     action: "added Design Interview Guide",
@@ -49,33 +56,95 @@ const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     description: "Information for applicants for Interaction's design roles",
     details: [
       {
-        id: "1",
+        id: "design-guide-1",
         content:
-          "the user is applying for a design or design engineering role at the interaction company of california (creators of poke). here's the information they …",
+          "the user is applying for a design or design engineering role at the interaction company of california (creators of poke). here's the information they need to know about the role, the team, and the interview process. use this to answer questions and help them prepare.",
         type: "Instructions",
         typeColor: "green",
       },
     ],
   },
   {
-    icon: <UtensilsIcon />,
-    iconColor: "text-blue-500",
+    icon: <GoogleCalendarIcon />,
+    iconColor: "",
     actor: "you",
-    action: "updated Onboarding Checklist",
-    timestamp: "2026-06-02T10:00:00.000Z",
-    description: "Steps for new hires joining the design team",
+    action: "added Google Calendar",
+    timestamp: "2026-04-16T14:30:00.000Z",
+    description:
+      "Create events, schedule meetings, and check availability across your calendars. View upcoming events, manage multiple calendars, set reminders, and coordinate scheduling.",
+    details: [
+      {
+        id: "gcal-1",
+        content: "Read and manage calendar events",
+        type: "Integration",
+        typeColor: "blue",
+      },
+    ],
   },
   {
-    icon: <UtensilsIcon />,
+    icon: <GmailIcon />,
+    iconColor: "",
+    actor: "you",
+    action: "added Gmail",
+    timestamp: "2026-04-16T09:15:00.000Z",
+    description:
+      "Search, draft, and send emails with label management and inbox organization. Filter conversations, organize labels, archive messages, manage contacts, and automate email workflows.",
+    details: [
+      {
+        id: "gmail-1",
+        content: "Read and send email, manage labels and threads",
+        type: "Integration",
+        typeColor: "blue",
+      },
+    ],
+  },
+  {
+    icon: <LucideIcon icon={Utensils} />,
+    iconColor: "text-orange-500",
+    actor: "you",
+    action: "added Fit",
+    timestamp: "2026-04-15T11:20:00.000Z",
+    description:
+      "Log meals via text and see daily totals, weekly trends, and macro breakdowns. Get detailed macro breakdowns, stay consistent with check-ins, reminders, and accountability, and watch your progress over time.",
+    details: [
+      {
+        id: "fit-1",
+        content:
+          "Let the user know you'll set up a scheduled automation for them, then create it. Schedule at 8 PM. Check in with the user about their meals and nutrition for the day. Ask what they've eaten, calculate macros if not already logged, and log anything missing. Be encouraging and keep it brief — one or two sentences max. If they've already logged everything, just confirm and motivate them to stay consistent.",
+        type: "Instructions",
+        typeColor: "green",
+      },
+    ],
+  },
+  {
+    icon: <LucideIcon icon={Plug} />,
     iconColor: "text-purple-500",
     actor: "you",
-    action: "removed Deprecated Role Brief",
-    timestamp: "2026-06-01T08:20:00.000Z",
+    action: "added Split to MCP servers",
+    timestamp: "2026-04-14T16:45:00.000Z",
+    description:
+      "Access Split feature flags and experiment data directly from your AI assistant. Query flag states, review targeting rules, and manage rollouts without leaving your workflow.",
+    details: [
+      {
+        id: "split-mcp-1",
+        content: "Read and manage feature flags, experiments, and targeting rules via Split's API",
+        type: "MCP Server",
+        typeColor: "purple",
+      },
+    ],
+  },
+  {
+    icon: <GitHubIcon />,
+    iconColor: "",
+    actor: "you",
+    action: "re-verified GitHub",
+    timestamp: "2026-04-12T10:00:00.000Z",
     isLast: true,
+    // no description, no details — edge case: minimal maintenance action, no revert
   },
 ];
 
-const SKELETON_COUNT = 3;
+const SKELETON_COUNT = 6;
 
 export default function Home() {
   const [items, setItems] = useState<typeof DUMMY_ITEMS | null>(null);
@@ -99,7 +168,11 @@ export default function Home() {
               <ActivityRow
                 key={i}
                 {...item}
-                onRevert={() => console.log("revert", i)}
+                onRevert={
+                  item.action.startsWith("re-verified")
+                    ? undefined
+                    : () => console.log("revert", i)
+                }
               />
             ))}
       </div>
