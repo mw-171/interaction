@@ -75,7 +75,7 @@ export function ActivityRow({
   details,
   isLast = false,
 }: ActivityRowProps) {
-  const [showDetails, setShowDetails] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const toggleItem = (id: string) => {
@@ -170,50 +170,57 @@ export function ActivityRow({
                       typeColorMap[item.typeColor ?? "green"] ??
                       typeColorMap.green;
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        type="button"
-                        onClick={() => {
-                          toggleItem(item.id);
-                          item.onExpand?.();
-                        }}
-                        className={`flex w-full items-start gap-2 px-3 py-2 text-left transition-colors duration-150 ease hover:bg-neutral-100 dark:hover:bg-neutral-800/50 ${
-                          i > 0
-                            ? "border-t border-neutral-200 dark:border-neutral-800"
-                            : ""
-                        } ${isExpanded ? "bg-neutral-100/60 dark:bg-neutral-800/30" : ""}`}
+                        className={i > 0 ? "border-t border-neutral-200 dark:border-neutral-800" : ""}
                       >
-                        <FilePen className="mt-px size-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" />
-                        {/* max-height transition for text expand — opacity layered on top for polish */}
-                        <div
-                          className={`min-w-0 overflow-hidden transition-[max-height,opacity] duration-200 ease-out motion-reduce:transition-none ${
-                            isExpanded
-                              ? "max-h-[500px] opacity-100"
-                              : "max-h-[1.25rem] opacity-100"
-                          }`}
+                        {/* Header row — always shows truncated preview */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleItem(item.id);
+                            item.onExpand?.();
+                          }}
+                          className="flex w-full items-start gap-2 px-3 py-2 text-left cursor-pointer transition-colors duration-150 ease hover:bg-neutral-100 dark:hover:bg-neutral-800/50"
                         >
-                          <span
-                            className={`text-[13px] text-neutral-600 dark:text-neutral-400 ${
-                              isExpanded
-                                ? "whitespace-pre-wrap break-words"
-                                : "line-clamp-1"
-                            }`}
-                          >
+                          <FilePen className="mt-px size-3.5 shrink-0 text-neutral-400 dark:text-neutral-500" />
+                          <span className="min-w-0 text-[13px] text-neutral-600 dark:text-neutral-400 line-clamp-1">
                             {item.content}
                           </span>
-                        </div>
-                        <span className="ml-auto flex shrink-0 items-center gap-1.5 self-start pt-px">
-                          <Plus className={`size-3.5 ${iconClass}`} />
-                          <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                            {item.type}
+                          <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                            <Plus className={`size-3.5 ${iconClass}`} />
+                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                              {item.type}
+                            </span>
+                            <ChevronDown
+                              className={`size-3 text-neutral-400 transition-transform duration-200 ease-out motion-reduce:transition-none dark:text-neutral-500 ${
+                                isExpanded ? "rotate-180" : ""
+                              }`}
+                            />
                           </span>
-                          <ChevronDown
-                            className={`size-3 text-neutral-400 transition-transform duration-200 ease-out motion-reduce:transition-none dark:text-neutral-500 ${
-                              isExpanded ? "rotate-180" : ""
-                            }`}
-                          />
-                        </span>
-                      </button>
+                        </button>
+
+                        {/* Expanded content — grid reveal below header */}
+                        <div
+                          className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
+                            isExpanded
+                              ? "[grid-template-rows:1fr]"
+                              : "[grid-template-rows:0fr]"
+                          }`}
+                        >
+                          <div className="min-h-0 overflow-hidden">
+                            <div className="px-3 pt-1.5 pb-2.5 pl-[30px]">
+                              <p
+                                className={`whitespace-pre-wrap text-[12px] leading-relaxed text-neutral-500 dark:text-neutral-400 transition-opacity duration-150 delay-75 motion-reduce:transition-none ${
+                                  isExpanded ? "opacity-100" : "opacity-0"
+                                }`}
+                              >
+                                {item.content}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
