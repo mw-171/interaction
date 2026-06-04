@@ -92,14 +92,14 @@ export function ActivityRow({
     typeof timestamp === "string" ? timestamp : timestamp.toISOString();
 
   return (
-    <div className="relative flex items-start gap-3 md:gap-4">
+    <div className="group relative flex items-start gap-3 md:gap-4">
       {!isLast && (
         <div className="absolute top-6 left-[13px] h-full w-px bg-neutral-200 dark:bg-neutral-800" />
       )}
 
       {/* Icon */}
       <div
-        className={`relative z-10 mt-[-1px] flex size-[26px] shrink-0 items-center justify-center rounded-full bg-white dark:bg-neutral-950 ${iconColor}`}
+        className={`relative z-10 mt-[-3px] flex size-[26px] shrink-0 items-center justify-center rounded-full bg-white dark:bg-neutral-950 ${iconColor}`}
       >
         {icon}
       </div>
@@ -107,30 +107,30 @@ export function ActivityRow({
       {/* Content */}
       <div className="min-w-0 flex-1 pb-6">
         {/* Header row */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="text-[14px] leading-snug text-neutral-700 dark:text-neutral-300">
-            <p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[14px] leading-snug text-neutral-700 dark:text-neutral-300">
               <span className="font-medium text-neutral-900 dark:text-neutral-100">
                 {actor}
               </span>{" "}
               {action}
-              <span className="ml-1.5 whitespace-nowrap text-neutral-400 dark:text-neutral-500">
-                ·{" "}
-                <time dateTime={isoString} className="tabular-nums">
-                  {formatRelativeTime(timestamp)}
-                </time>
-              </span>
             </p>
+            {onRevert && (
+              <button
+                type="button"
+                onClick={onRevert}
+                className="shrink-0 rounded-md px-2 py-0.5 text-[12px] font-medium text-neutral-400 opacity-0 transition-[opacity,color,background-color] duration-150 ease-out hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:text-neutral-500 dark:hover:bg-red-500/10 dark:hover:text-red-400 motion-reduce:transition-none"
+              >
+                Undo
+              </button>
+            )}
           </div>
-          {onRevert && (
-            <button
-              type="button"
-              onClick={onRevert}
-              className="shrink-0 rounded-md px-2 py-0.5 text-[12px] font-medium text-neutral-400 transition-colors duration-200 ease-out hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-neutral-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-            >
-              Revert
-            </button>
-          )}
+          <time
+            dateTime={isoString}
+            className="shrink-0 text-[13px] tabular-nums text-neutral-400 dark:text-neutral-500"
+          >
+            {formatRelativeTime(timestamp)}
+          </time>
         </div>
 
         {/* Description */}

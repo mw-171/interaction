@@ -53,8 +53,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
   {
     icon: <LucideIcon icon={Utensils} />,
     iconColor: "text-green-500",
-    actor: "you",
-    action: "added Design Interview Guide",
+    actor: "Design Interview Guide",
+    action: "was added.",
     timestamp: "2026-06-03T19:54:47.327Z",
     description: "Information for applicants for Interaction's design roles",
     details: [
@@ -70,8 +70,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
   {
     icon: <GoogleCalendarIcon />,
     iconColor: "",
-    actor: "you",
-    action: "added Google Calendar",
+    actor: "Google Calendar",
+    action: "was connected.",
     timestamp: "2026-06-01T14:30:00.000Z",
     description:
       "Create events, schedule meetings, and check availability across your calendars. View upcoming events, manage multiple calendars, set reminders, and coordinate scheduling.",
@@ -87,8 +87,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
   {
     icon: <GmailIcon />,
     iconColor: "",
-    actor: "you",
-    action: "added Gmail",
+    actor: "Gmail",
+    action: "was connected.",
     timestamp: "2026-05-16T09:15:00.000Z",
     description:
       "Search, draft, and send emails with label management and inbox organization. Filter conversations, organize labels, archive messages, manage contacts, and automate email workflows.",
@@ -104,8 +104,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
   {
     icon: <LucideIcon icon={Utensils} />,
     iconColor: "text-orange-500",
-    actor: "you",
-    action: "added Fit",
+    actor: "Fit",
+    action: "was added.",
     timestamp: "2026-04-15T11:20:00.000Z",
     description:
       "Log meals via text and see daily totals, weekly trends, and macro breakdowns. Get detailed macro breakdowns, stay consistent with check-ins, reminders, and accountability, and watch your progress over time.",
@@ -122,8 +122,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
   {
     icon: <LucideIcon icon={Plug} />,
     iconColor: "text-purple-500",
-    actor: "you",
-    action: "added Split to MCP servers",
+    actor: "Split",
+    action: "was added to MCP servers.",
     timestamp: "2026-04-14T16:45:00.000Z",
     description:
       "Access Split feature flags and experiment data directly from your AI assistant. Query flag states, review targeting rules, and manage rollouts without leaving your workflow.",
@@ -140,9 +140,10 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
   {
     icon: <GitHubIcon />,
     iconColor: "",
-    actor: "you",
-    action: "re-verified GitHub",
+    actor: "GitHub",
+    action: "was re-verified.",
     timestamp: "2026-04-12T10:00:00.000Z",
     isLast: true,
   },
 ];
+
