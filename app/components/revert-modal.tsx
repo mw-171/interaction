@@ -60,10 +60,7 @@ export default function RevertModal({
     }
 
     const raf = requestAnimationFrame(() => setVisible(false));
-    const t = window.setTimeout(
-      () => setMounted(false),
-      MODAL_TRANSITION_MS,
-    );
+    const t = window.setTimeout(() => setMounted(false), MODAL_TRANSITION_MS);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t);
@@ -74,7 +71,7 @@ export default function RevertModal({
     if (!visible) return;
     dialogRef.current
       ?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       )[0]
       ?.focus();
   }, [visible]);
@@ -92,8 +89,8 @@ export default function RevertModal({
       if (!dialog) return;
       const focusable = Array.from(
         dialog.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
       );
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -119,7 +116,8 @@ export default function RevertModal({
 
   const confirmLabel = `Revert ${actor}`;
 
-  const stopsItems = stops ?? (description ? [description.replace(/\.$/, "")] : []);
+  const stopsItems =
+    stops ?? (description ? [description.replace(/\.$/, "")] : []);
   const staysItems: string[] = [
     ...(details?.map((d) => `Your ${d.label} connection`) ?? []),
     "Any data already saved",
@@ -148,7 +146,10 @@ export default function RevertModal({
           <h2 id={titleId} className="text-lg font-semibold leading-none">
             Revert {actor}?
           </h2>
-          <p id={descId} className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+          <p
+            id={descId}
+            className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400"
+          >
             This removes the recipe from your account.
           </p>
         </div>
@@ -161,7 +162,10 @@ export default function RevertModal({
               </h4>
               <ul className="flex flex-col gap-1.5">
                 {stopsItems.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-400">
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-400"
+                  >
                     <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
                     {item}
                   </li>
@@ -175,7 +179,10 @@ export default function RevertModal({
             </h4>
             <ul className="flex flex-col gap-1.5">
               {staysItems.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-400">
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-400"
+                >
                   <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
                   {item}
                 </li>
@@ -222,6 +229,7 @@ export default function RevertModal({
         </button>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
+

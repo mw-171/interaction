@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowUpRight, ChevronDown } from "lucide-react";
+import { useState, useEffect, useRef, useId } from "react";
+import { ArrowUpRight, ChevronDown, Undo2 } from "lucide-react";
+import RevertModal from "./revert-modal";
 
 function formatRelativeTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -16,22 +17,38 @@ function formatRelativeTime(date: Date | string): string {
   return "just now";
 }
 
-export function ActivityRowSkeleton({ isLast = false }: { isLast?: boolean }) {
+const SKELETON_VARIANTS = [
+  { text: "w-48", timestamp: "w-10", desc: "w-64" },
+  { text: "w-56", timestamp: "w-12", desc: "w-44" },
+  { text: "w-40", timestamp: "w-8", desc: "w-52" },
+];
+
+export function ActivityRowSkeleton({
+  isLast = false,
+  variant = 0,
+}: {
+  isLast?: boolean;
+  variant?: number;
+}) {
+  const v = SKELETON_VARIANTS[variant % SKELETON_VARIANTS.length];
   return (
-    <div className="relative flex items-start gap-3 md:gap-4">
+    <div className="relative flex animate-pulse items-start gap-3 md:gap-4">
       {!isLast && (
         <div className="absolute top-6 left-[13px] h-full w-px bg-neutral-200 dark:bg-neutral-800" />
       )}
-      <div className="relative z-10 mt-[-1px] flex size-[26px] shrink-0 animate-pulse items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-800" />
+      <div className="relative z-10 mt-[-3px] size-[26px] shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-800" />
       <div className="min-w-0 flex-1 pb-6">
-        <div className="flex animate-pulse items-center gap-3">
-          <div className="h-3.5 w-48 rounded-full bg-neutral-200 dark:bg-neutral-800" />
-          <div className="h-3 w-12 rounded-full bg-neutral-200 dark:bg-neutral-800" />
+        <div className="flex items-center justify-between gap-3">
+          <div
+            className={`h-[14px] ${v.text} rounded-full bg-neutral-200 dark:bg-neutral-800`}
+          />
+          <div
+            className={`h-3 ${v.timestamp} shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-800`}
+          />
         </div>
-        <div className="mt-2 flex animate-pulse gap-2">
-          <div className="h-3 w-64 rounded-full bg-neutral-200 dark:bg-neutral-800" />
-          <div className="h-3 w-16 rounded-full bg-neutral-200 dark:bg-neutral-800" />
-        </div>
+        <div
+          className={`mt-1.5 h-3 ${v.desc} rounded-full bg-neutral-200 dark:bg-neutral-800`}
+        />
       </div>
     </div>
   );
@@ -51,9 +68,11 @@ export interface ActivityRowProps {
   action: string;
   timestamp: Date | string;
   description?: string;
-  onRevert?: () => void;
+  stops?: string[];
+  onRevert?: () => Promise<void>;
   details?: ActivityDetail[];
   isLast?: boolean;
+  reverting?: boolean;
 }
 
 export function ActivityRow({
@@ -63,11 +82,15 @@ export function ActivityRow({
   action,
   timestamp,
   description,
+  stops,
   onRevert,
   details,
   isLast = false,
+  reverting = false,
 }: ActivityRowProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const undoButtonRef = useRef<HTMLButtonElement>(null);
 
   const hasDetails = details && details.length > 0;
   const isoString =
@@ -81,9 +104,9 @@ export function ActivityRow({
 
       {/* Icon */}
       <div
-        className={`relative z-10 mt-[-3px] flex size-[26px] shrink-0 items-center justify-center rounded-full bg-white dark:bg-neutral-950 ${iconColor}`}
+        className={`relative z-10 mt-[-3px] flex size-[26px] shrink-0 items-center justify-center rounded-full bg-white dark:bg-neutral-950 ${action === "was reverted" ? "text-purple-500" : iconColor}`}
       >
-        {icon}
+        {action === "was reverted" ? <Undo2 size={16} /> : icon}
       </div>
 
       {/* Content */}
@@ -96,12 +119,19 @@ export function ActivityRow({
             </span>{" "}
             {action}
           </p>
-          <time
-            dateTime={isoString}
-            className="shrink-0 text-[13px] tabular-nums text-neutral-400 dark:text-neutral-500"
-          >
-            {formatRelativeTime(timestamp)}
-          </time>
+          {reverting ? (
+            <div className="flex shrink-0 items-center gap-1.5 text-[13px] text-neutral-400 dark:text-neutral-500">
+              <div className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
+              Undoing…
+            </div>
+          ) : (
+            <time
+              dateTime={isoString}
+              className="shrink-0 text-[13px] tabular-nums text-neutral-400 dark:text-neutral-500"
+            >
+              {formatRelativeTime(timestamp)}
+            </time>
+          )}
         </div>
 
         {/* Description */}
@@ -122,7 +152,7 @@ export function ActivityRow({
               <ChevronDown
                 className={`size-3.5 transition-transform duration-200 ease-out motion-reduce:transition-none ${showDetails ? "rotate-180" : ""}`}
               />
-              {details.length} added
+              {details.length} {action === "was reverted" ? "removed" : "added"}
             </button>
 
             <div
@@ -133,45 +163,44 @@ export function ActivityRow({
               }`}
             >
               <div className="min-h-0 overflow-hidden">
-                <div className="mt-2">
-                  {/* Integration bubbles */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {details.map((item) =>
-                      item.href ? (
-                        <a
-                          key={item.id}
-                          href={item.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[13px] text-neutral-600 transition-colors duration-150 ease hover:bg-neutral-100 hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:bg-neutral-800/70"
-                        >
-                          {item.icon && <span className="shrink-0">{item.icon}</span>}
-                          {item.label}
-                          <ArrowUpRight className="size-3 text-neutral-400 dark:text-neutral-500" />
-                        </a>
-                      ) : (
-                        <div
-                          key={item.id}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[13px] text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400"
-                        >
-                          {item.icon && <span className="shrink-0">{item.icon}</span>}
-                          {item.label}
-                        </div>
-                      )
-                    )}
-                  </div>
-
-                  {/* Undo */}
-                  {onRevert && (
-                    <div className="mt-2 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={onRevert}
-                        className="rounded-md px-2 py-0.5 text-[12px] font-medium text-neutral-400 transition-colors duration-150 ease-out hover:bg-red-50 hover:text-red-600 dark:text-neutral-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {details.map((item) =>
+                    item.href ? (
+                      <a
+                        key={item.id}
+                        href={item.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[13px] text-neutral-600 transition-colors duration-150 ease hover:bg-neutral-100 hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400 dark:hover:bg-neutral-800/70"
                       >
-                        Undo
-                      </button>
-                    </div>
+                        {item.icon && (
+                          <span className="shrink-0">{item.icon}</span>
+                        )}
+                        {item.label}
+                        <ArrowUpRight className="size-3 text-neutral-400 dark:text-neutral-500" />
+                      </a>
+                    ) : (
+                      <div
+                        key={item.id}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-[13px] text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-400"
+                      >
+                        {item.icon && (
+                          <span className="shrink-0">{item.icon}</span>
+                        )}
+                        {item.label}
+                      </div>
+                    ),
+                  )}
+
+                  {onRevert && (
+                    <button
+                      ref={undoButtonRef}
+                      type="button"
+                      onClick={() => setShowModal(true)}
+                      className="ml-auto rounded-md px-2 py-0.5 text-[12px] font-medium text-neutral-400 transition-colors duration-150 ease-out hover:bg-red-50 hover:text-red-600 dark:text-neutral-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                    >
+                      Undo
+                    </button>
                   )}
                 </div>
               </div>
@@ -179,6 +208,23 @@ export function ActivityRow({
           </div>
         )}
       </div>
+
+      {onRevert && (
+        <RevertModal
+          open={showModal}
+          onClose={() => {
+            setShowModal(false);
+            undoButtonRef.current?.focus();
+          }}
+          onConfirm={onRevert}
+          actor={actor}
+          action={action}
+          details={details}
+          description={description}
+          stops={stops}
+        />
+      )}
     </div>
   );
 }
+
