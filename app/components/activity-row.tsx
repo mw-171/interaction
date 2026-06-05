@@ -26,10 +26,17 @@ function formatRelativeTime(date: Date | string): string {
   return "just now";
 }
 
-const SKELETON_VARIANTS = [
-  { text: "w-48", timestamp: "w-10", desc: "w-64" },
+// `details`, when present, draws an extra "N integrations connected" toggle row
+// so the skeleton mirrors rows that have a details section.
+const SKELETON_VARIANTS: {
+  text: string;
+  timestamp: string;
+  desc: string;
+  details?: string;
+}[] = [
+  { text: "w-48", timestamp: "w-10", desc: "w-64", details: "w-36" },
   { text: "w-56", timestamp: "w-12", desc: "w-44" },
-  { text: "w-40", timestamp: "w-8", desc: "w-52" },
+  { text: "w-40", timestamp: "w-8", desc: "w-52", details: "w-28" },
   { text: "w-52", timestamp: "w-10", desc: "w-56" },
 ];
 
@@ -63,6 +70,15 @@ export function ActivityRowSkeleton({
             className={`h-3 ${v.desc} rounded-full bg-neutral-200 dark:bg-neutral-800`}
           />
         </div>
+        {/* Optional "integrations connected" toggle row — chevron dot + label */}
+        {v.details && (
+          <div className="mt-1 flex h-5 items-center gap-1">
+            <div className="size-3.5 shrink-0 rounded-full bg-neutral-200 dark:bg-neutral-800" />
+            <div
+              className={`h-3 ${v.details} rounded-full bg-neutral-200 dark:bg-neutral-800`}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -88,6 +104,14 @@ export interface ActivityRowProps {
   timestamp: Date | string;
   description?: string;
   stops?: string[];
+  stays?: string[];
+  /**
+   * Integration-only: how the modal phrases this integration's access (e.g.
+   * "Notion workspace access"). Used in both "What's stopping" (when reverting
+   * the integration) and "What won't change" (when reverting a recipe that
+   * relies on it).
+   */
+  accessLabel?: string;
   onRevert?: () => Promise<void>;
   onRestore?: () => void;
   details?: ActivityDetail[];
@@ -225,6 +249,7 @@ export function ActivityRow({
   timestamp,
   description,
   stops,
+  stays,
   onRevert,
   onRestore,
   details,
@@ -307,7 +332,7 @@ export function ActivityRow({
             {reverting ? (
               <div className="flex items-center gap-1.5 text-[13px] text-neutral-400 dark:text-neutral-500">
                 <div className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
-                Undoing…
+                Reverting...
               </div>
             ) : (
               <>
@@ -320,7 +345,7 @@ export function ActivityRow({
                 {(onRevert || onRestore) && (
                   <RowMenu
                     actor={actor}
-                    label={"Undo"}
+                    label={"Revert"}
                     onSelect={onRestore ? onRestore : () => setShowModal(true)}
                     triggerRef={menuButtonRef}
                   />
@@ -406,9 +431,9 @@ export function ActivityRow({
           onConfirm={onRevert}
           actor={actor}
           kind={kind}
-          details={details}
           description={description}
           stops={stops}
+          stays={stays}
         />
       )}
     </div>

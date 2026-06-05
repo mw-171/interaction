@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityRow, ActivityRowSkeleton } from "./components/activity-row";
 import type { ActivityRowProps } from "./components/activity-row";
 import SearchBar from "./components/search-bar";
+import ScrollFade from "./components/scroll-fade";
 import { DUMMY_ITEMS } from "./data/dummy";
 
 type BaseItem = Omit<ActivityRowProps, "onRevert" | "onRestore">;
 type Item = BaseItem & { _id: string; original?: BaseItem };
 
-const SKELETON_COUNT = 4;
+const SKELETON_COUNT = 8;
 const REVERT_DELAY_MS = 1200;
 const AFTER_MODAL_CLOSE_MS = 300; // modal transition (200ms) + small buffer
 const SEARCH_DEBOUNCE_MS = 250;
@@ -19,6 +20,48 @@ function stripRuntime(item: Item): BaseItem {
   void _id;
   void original;
   return rest;
+}
+
+// How an integration's access reads ("Notion workspace access"). Integrations
+// supply their own phrasing; integrations that only appear as a recipe
+// dependency with no standalone row (e.g. Browserbase) fall back to a generic
+// phrase.
+function accessLabelFor(
+  integrationActor: string,
+  allItems: BaseItem[],
+): string {
+  const integration = allItems.find(
+    (o) => o.kind === "integration" && o.actor === integrationActor,
+  );
+  return integration?.accessLabel ?? `${integrationActor} access`;
+}
+
+// "What's stopping" — the capabilities you lose. A recipe loses its features; an
+// integration loses Poke's access to it.
+function computeStops(item: BaseItem, allItems: BaseItem[]): string[] {
+  if (item.kind === "integration")
+    return [accessLabelFor(item.actor, allItems)];
+  return item.stops ?? [];
+}
+
+// "What won't change" — derived from the recipe↔integration graph so it's clear
+// what's shared. Reverting a recipe keeps the integration access it relied on;
+// reverting an integration keeps the recipes still using it. Empty when there's
+// no relationship, so the modal hides the section.
+function computeStays(item: BaseItem, allItems: BaseItem[]): string[] {
+  if (item.kind === "recipe") {
+    return (item.details ?? []).map((d) => accessLabelFor(d.label, allItems));
+  }
+  if (item.kind === "integration") {
+    return allItems
+      .filter(
+        (other) =>
+          other.kind === "recipe" &&
+          other.details?.some((d) => d.label === item.actor),
+      )
+      .map((recipe) => `${item.actor} access for ${recipe.actor} recipe`);
+  }
+  return [];
 }
 
 // Module-level so the unique id / timestamp helpers stay out of render purity checks.
@@ -33,7 +76,9 @@ function nowIso(): string {
 
 function scrollToTop(): void {
   if (typeof window === "undefined") return;
-  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const reduce = window.matchMedia?.(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
   window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
 }
 
@@ -146,54 +191,58 @@ export default function Home() {
     debouncedQuery.trim().length > 0;
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-12">
-      <div className="mb-8 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
-          Activity
-        </h1>
-        <SearchBar value={query} onChange={setQuery} />
-      </div>
-      <div>
-        {showSkeletons ? (
-          Array.from({ length: SKELETON_COUNT }, (_, i) => (
-            <ActivityRowSkeleton
-              key={i}
-              isLast={i === SKELETON_COUNT - 1}
-              variant={i}
-            />
-          ))
-        ) : hasNoMatches ? (
-          <p
-            role="status"
-            aria-live="polite"
-            className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400"
-          >
-            No activity matches “{debouncedQuery}”.
-          </p>
-        ) : (
-          filteredItems?.map((item, i) => {
-            const q = debouncedQuery.trim().toLowerCase();
-            const matchedIntegration =
-              q.length > 0 &&
-              !!item.details?.some((d) => d.label.toLowerCase().includes(q));
-            return (
-              <div
-                key={item._id}
-                className="animate-fade-in motion-reduce:animate-none"
-                style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}
-              >
-                <ActivityRow
-                  {...item}
-                  isLast={i === filteredItems.length - 1}
-                  forceExpanded={matchedIntegration}
-                  {...getHandlers(item)}
-                />
-              </div>
-            );
-          })
-        )}
-      </div>
-    </main>
+    <>
+      <main className="mx-auto max-w-2xl px-6 py-12">
+        <div className="mb-8 flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+            Activity
+          </h1>
+          <SearchBar value={query} onChange={setQuery} />
+        </div>
+        <div>
+          {showSkeletons ? (
+            Array.from({ length: SKELETON_COUNT }, (_, i) => (
+              <ActivityRowSkeleton
+                key={i}
+                isLast={i === SKELETON_COUNT - 1}
+                variant={i}
+              />
+            ))
+          ) : hasNoMatches ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400"
+            >
+              No activity matches “{debouncedQuery}”.
+            </p>
+          ) : (
+            filteredItems?.map((item, i) => {
+              const q = debouncedQuery.trim().toLowerCase();
+              const matchedIntegration =
+                q.length > 0 &&
+                !!item.details?.some((d) => d.label.toLowerCase().includes(q));
+              return (
+                <div
+                  key={item._id}
+                  className="animate-fade-in motion-reduce:animate-none"
+                  style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}
+                >
+                  <ActivityRow
+                    {...item}
+                    stops={computeStops(item, items ?? [])}
+                    stays={computeStays(item, items ?? [])}
+                    isLast={i === filteredItems.length - 1}
+                    forceExpanded={matchedIntegration}
+                    {...getHandlers(item)}
+                  />
+                </div>
+              );
+            })
+          )}
+        </div>
+      </main>
+      <ScrollFade />
+    </>
   );
 }
-

@@ -85,6 +85,12 @@ export const DUMMY_ITEMS: DummyItem[] = [
         icon: <NotionIcon />,
         href: "https://poke.com/recipes/notion",
       },
+      {
+        id: "pt-gcal",
+        label: "Google Calendar",
+        icon: <GoogleCalendarIcon />,
+        href: "https://poke.com/recipes/google-calendar",
+      },
     ],
   },
   {
@@ -96,7 +102,7 @@ export const DUMMY_ITEMS: DummyItem[] = [
     action: "was reverted",
     timestamp: "2026-06-04T07:51:00.000Z",
     description:
-      "Finds dining options and autonomously makes reservations using Browserbase",
+      "Finds dining options and autonomously makes reservations using Browserbase.",
     original: {
       icon: <LucideIcon icon={Utensils} />,
       iconColor: "text-amber-500",
@@ -106,7 +112,7 @@ export const DUMMY_ITEMS: DummyItem[] = [
       action: "was added",
       timestamp: "2026-06-04T07:51:00.000Z",
       description:
-        "Finds dining options and autonomously makes reservations using Browserbase",
+        "Finds dining options and autonomously makes reservations using Browserbase.",
       stops: [
         "Finding available restaurants and tables",
         "Booking reservations automatically",
@@ -130,7 +136,7 @@ export const DUMMY_ITEMS: DummyItem[] = [
     action: "was added",
     timestamp: "2026-06-03T15:00:00.000Z",
     description:
-      "Finds dining options and autonomously makes reservations using Browserbase",
+      "Finds dining options and autonomously makes reservations using Browserbase.",
     stops: [
       "Finding available restaurants and tables",
       "Booking reservations automatically",
@@ -167,7 +173,7 @@ export const DUMMY_ITEMS: DummyItem[] = [
     timestamp: "2026-06-02T10:00:00.000Z",
     description:
       "Search and edit your entire workspace directly from your texts.",
-    stops: ["Searching your Notion workspace", "Editing pages from Poke"],
+    accessLabel: "Notion workspace and search access",
     details: [
       {
         id: "notion-1",
@@ -186,10 +192,7 @@ export const DUMMY_ITEMS: DummyItem[] = [
     action: "was connected",
     timestamp: "2026-06-01T14:30:00.000Z",
     description: "Manage your schedule and book meetings with a quick text.",
-    stops: [
-      "Managing your schedule from Poke",
-      "Booking meetings automatically",
-    ],
+    accessLabel: "Google Calendar access",
     details: [
       {
         id: "gcal-1",
@@ -208,7 +211,7 @@ export const DUMMY_ITEMS: DummyItem[] = [
     action: "was connected",
     timestamp: "2026-05-16T09:15:00.000Z",
     description: "Search your inbox and draft replies while you're on the go.",
-    stops: ["Searching your inbox", "Drafting and sending email replies"],
+    accessLabel: "Gmail inbox access",
     details: [
       {
         id: "gmail-1",
@@ -238,11 +241,16 @@ export const DUMMY_ITEMS: DummyItem[] = [
     action: "was added to MCP servers",
     timestamp: "2026-04-14T16:45:00.000Z",
     description:
-      "Access Split feature flags and experiment data directly from your AI assistant.",
-    stops: ["Accessing Split feature flags", "Viewing experiment data in Poke"],
+      "Record expenses and get updates from Split directly with Poke.",
+    accessLabel: "Split feature flag access",
     details: [
-      { id: "split-mcp-1", label: "Split", href: "https://poke.com/recipes/split" },
+      {
+        id: "split-mcp-1",
+        label: "Split",
+        href: "https://split-0.vercel.app/",
+      },
     ],
     isLast: true,
   },
 ];
+
