@@ -1,4 +1,4 @@
-import { Globe, Heart, Plug, Utensils } from "lucide-react";
+import { Heart, Plug, Utensils } from "lucide-react";
 import type { ActivityRowProps } from "../components/activity-row";
 
 function GmailIcon() {
@@ -37,6 +37,16 @@ function NotionIcon() {
   );
 }
 
+function BrowserbaseIcon() {
+  return (
+    <img
+      src="https://cdn.brandfetch.io/idbdCQaufv/theme/dark/logo.svg?c=1bxid64Mup7aczewSAYMX&t=1779255186717"
+      alt="Browserbase"
+      className="h-4 w-auto"
+    />
+  );
+}
+
 function LucideIcon({
   icon: Icon,
   className,
@@ -49,11 +59,17 @@ function LucideIcon({
 
 export const SKELETON_COUNT = 9;
 
-export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
+type DummyItem = Omit<ActivityRowProps, "onRevert" | "onRestore"> & {
+  original?: Omit<ActivityRowProps, "onRevert" | "onRestore">;
+};
+
+export const DUMMY_ITEMS: DummyItem[] = [
   {
     icon: <LucideIcon icon={Heart} />,
     iconColor: "text-pink-500",
     actor: "Period Tracker",
+    kind: "recipe",
+    recipeSlug: "period-tracker",
     action: "was added",
     timestamp: "2026-06-04T08:00:00.000Z",
     description:
@@ -67,7 +83,7 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
         id: "pt-notion",
         label: "Notion",
         icon: <NotionIcon />,
-        href: "https://notion.so",
+        href: "https://poke.com/recipes/notion",
       },
     ],
   },
@@ -75,29 +91,46 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     icon: <LucideIcon icon={Utensils} />,
     iconColor: "text-amber-500",
     actor: "Restaurant Reservations",
+    kind: "recipe",
+    recipeSlug: "restaurant-reservations",
     action: "was reverted",
     timestamp: "2026-06-04T07:51:00.000Z",
     description:
       "Finds dining options and autonomously makes reservations using Browserbase",
-    details: [
-      {
-        id: "rr-revert-browserbase",
-        label: "Browserbase",
-        icon: (
-          <Globe size={14} className="text-neutral-400 dark:text-neutral-500" />
-        ),
-        href: "https://www.browserbase.com",
-      },
-    ],
+    original: {
+      icon: <LucideIcon icon={Utensils} />,
+      iconColor: "text-amber-500",
+      actor: "Restaurant Reservations",
+      kind: "recipe",
+      recipeSlug: "restaurant-reservations",
+      action: "was added",
+      timestamp: "2026-06-04T07:51:00.000Z",
+      description:
+        "Finds dining options and autonomously makes reservations using Browserbase",
+      stops: [
+        "Finding available restaurants and tables",
+        "Booking reservations automatically",
+      ],
+      details: [
+        {
+          id: "rr-revert-browserbase",
+          label: "Browserbase",
+          icon: <BrowserbaseIcon />,
+          href: "https://poke.com/recipes/restaurant-reservations",
+        },
+      ],
+    },
   },
   {
     icon: <LucideIcon icon={Utensils} />,
     iconColor: "text-amber-500",
     actor: "Restaurant Reservations",
+    kind: "recipe",
+    recipeSlug: "restaurant-reservations",
     action: "was added",
     timestamp: "2026-06-03T15:00:00.000Z",
     description:
-      "Find tables and book them automatically without lifting a finger.",
+      "Finds dining options and autonomously makes reservations using Browserbase",
     stops: [
       "Finding available restaurants and tables",
       "Booking reservations automatically",
@@ -106,10 +139,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
       {
         id: "rr-browserbase",
         label: "Browserbase",
-        icon: (
-          <Globe size={14} className="text-neutral-400 dark:text-neutral-500" />
-        ),
-        href: "https://www.browserbase.com",
+        icon: <BrowserbaseIcon />,
+        href: "https://poke.com/recipes/restaurant-reservations",
       },
     ],
   },
@@ -117,6 +148,9 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     icon: <LucideIcon icon={Utensils} />,
     iconColor: "text-green-500",
     actor: "Design Interview Guide",
+    kind: "recipe",
+    recipeSlug: "design-interview-guide",
+    recipeUrl: "https://poke.com/r/lQJITXX1aqI",
     action: "was added",
     timestamp: "2026-06-03T09:00:00.000Z",
     description:
@@ -127,6 +161,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     icon: <NotionIcon />,
     iconColor: "",
     actor: "Notion",
+    kind: "integration",
+    recipeSlug: "notion",
     action: "was connected",
     timestamp: "2026-06-02T10:00:00.000Z",
     description:
@@ -137,7 +173,7 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
         id: "notion-1",
         label: "Notion",
         icon: <NotionIcon />,
-        href: "https://notion.so",
+        href: "https://poke.com/recipes/notion",
       },
     ],
   },
@@ -145,6 +181,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     icon: <GoogleCalendarIcon />,
     iconColor: "",
     actor: "Google Calendar",
+    kind: "integration",
+    recipeSlug: "google-calendar",
     action: "was connected",
     timestamp: "2026-06-01T14:30:00.000Z",
     description: "Manage your schedule and book meetings with a quick text.",
@@ -157,7 +195,7 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
         id: "gcal-1",
         label: "Google Calendar",
         icon: <GoogleCalendarIcon />,
-        href: "https://calendar.google.com",
+        href: "https://poke.com/recipes/google-calendar",
       },
     ],
   },
@@ -165,6 +203,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     icon: <GmailIcon />,
     iconColor: "",
     actor: "Gmail",
+    kind: "integration",
+    recipeSlug: "gmail",
     action: "was connected",
     timestamp: "2026-05-16T09:15:00.000Z",
     description: "Search your inbox and draft replies while you're on the go.",
@@ -174,7 +214,7 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
         id: "gmail-1",
         label: "Gmail",
         icon: <GmailIcon />,
-        href: "https://mail.google.com",
+        href: "https://poke.com/recipes/gmail",
       },
     ],
   },
@@ -182,6 +222,8 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     icon: <LucideIcon icon={Utensils} />,
     iconColor: "text-orange-500",
     actor: "Fit",
+    kind: "recipe",
+    recipeSlug: "fit",
     action: "was added",
     timestamp: "2026-04-15T11:20:00.000Z",
     description: "Track meals and macros with a daily accountability check-in.",
@@ -191,15 +233,16 @@ export const DUMMY_ITEMS: Omit<ActivityRowProps, "onRevert">[] = [
     icon: <LucideIcon icon={Plug} />,
     iconColor: "text-purple-500",
     actor: "Split",
+    kind: "integration",
+    recipeSlug: "split",
     action: "was added to MCP servers",
     timestamp: "2026-04-14T16:45:00.000Z",
     description:
       "Access Split feature flags and experiment data directly from your AI assistant.",
     stops: ["Accessing Split feature flags", "Viewing experiment data in Poke"],
     details: [
-      { id: "split-mcp-1", label: "Split", href: "https://app.split.io" },
+      { id: "split-mcp-1", label: "Split", href: "https://poke.com/recipes/split" },
     ],
     isLast: true,
   },
 ];
-

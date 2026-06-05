@@ -18,7 +18,7 @@ export default function RevertModal({
   onClose,
   onConfirm,
   actor,
-  action,
+  kind,
   details,
   description,
   stops,
@@ -27,7 +27,7 @@ export default function RevertModal({
   onClose: () => void;
   onConfirm: () => Promise<void>;
   actor: string;
-  action: string;
+  kind?: "recipe" | "integration";
   details?: ActivityDetail[];
   description?: string;
   stops?: string[];
@@ -51,19 +51,24 @@ export default function RevertModal({
   });
 
   useLayoutEffect(() => {
+    let raf: number | null = null;
+    let t: number | null = null;
+
     if (open) {
-      const raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
         setMounted(true);
         setVisible(true);
       });
-      return () => cancelAnimationFrame(raf);
+      return () => {
+        if (raf !== null) cancelAnimationFrame(raf);
+      };
     }
 
-    const raf = requestAnimationFrame(() => setVisible(false));
-    const t = window.setTimeout(() => setMounted(false), MODAL_TRANSITION_MS);
+    raf = requestAnimationFrame(() => setVisible(false));
+    t = window.setTimeout(() => setMounted(false), MODAL_TRANSITION_MS);
     return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(t);
+      if (raf !== null) cancelAnimationFrame(raf);
+      if (t !== null) clearTimeout(t);
     };
   }, [open]);
 
@@ -114,7 +119,9 @@ export default function RevertModal({
 
   if (!mounted) return null;
 
-  const confirmLabel = `Revert ${actor}`;
+  const isIntegration = kind === "integration";
+  const confirmLabel = isIntegration ? "Disconnect" : `Revert ${actor}`;
+  const loadingLabel = isIntegration ? "Disconnecting…" : "Reverting…";
 
   const stopsItems =
     stops ?? (description ? [description.replace(/\.$/, "")] : []);
@@ -124,7 +131,7 @@ export default function RevertModal({
   ];
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-6 py-3 sm:items-center">
       <div
         className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-in-out dark:bg-black/70 motion-reduce:transition-none ${visible ? "opacity-100" : "opacity-0"}`}
         onClick={() => {
@@ -140,28 +147,64 @@ export default function RevertModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className={`relative z-10 my-auto flex w-full max-w-md flex-col rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-lg transition-[scale,opacity] duration-200 ease-in-out dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 motion-reduce:transition-none sm:max-w-lg ${visible ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"}`}
+        className={`relative z-10 my-auto flex w-full flex-col rounded-2xl border border-neutral-200 bg-[rgb(255,253,250)] text-neutral-900 shadow-lg transition-[scale,opacity] duration-200 ease-in-out dark:border-neutral-800 dark:bg-[rgb(16,16,18)] dark:text-neutral-100 motion-reduce:transition-none sm:max-w-lg ${visible ? "scale-100 opacity-100" : "scale-[0.98] opacity-0"}`}
       >
-        <div className="p-6 pb-4">
-          <h2 id={titleId} className="text-lg font-semibold leading-none">
-            Revert {actor}?
-          </h2>
-          <p
-            id={descId}
-            className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400"
+        <div className="flex items-start gap-3 p-6 pb-3">
+          <div className="min-w-0 flex-1 pt-1">
+            <h2
+              id={titleId}
+              className="text-lg font-semibold leading-snug break-words"
+            >
+              {isIntegration
+                ? `Revert ${actor} integration?`
+                : `Revert ${actor}?`}
+            </h2>
+            <p
+              id={descId}
+              className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400"
+            >
+              {isIntegration
+                ? `Poke will no longer be able to access your ${actor}.`
+                : "This removes the recipe from your account."}
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => onCloseRef.current()}
+            aria-label="Close"
+            className="-me-1.5 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 disabled:pointer-events-none disabled:opacity-40 dark:text-neutral-500 dark:hover:bg-white/8"
           >
-            This removes the recipe from your account.
-          </p>
+            <X className="size-[18px]" strokeWidth={2.5} />
+          </button>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-neutral-100 px-6 py-4 dark:border-neutral-800">
-          {stopsItems.length > 0 && (
+        {!isIntegration && (
+          <div className="flex flex-col gap-4 border-t border-neutral-100 px-6 py-3 dark:border-neutral-800">
+            {stopsItems.length > 0 && (
+              <div>
+                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+                  What stops
+                </h4>
+                <ul className="flex flex-col gap-1.5">
+                  {stopsItems.map((item, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-400"
+                    >
+                      <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div>
               <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
-                What stops
+                What stays
               </h4>
               <ul className="flex flex-col gap-1.5">
-                {stopsItems.map((item, i) => (
+                {staysItems.map((item, i) => (
                   <li
                     key={i}
                     className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-400"
@@ -172,26 +215,10 @@ export default function RevertModal({
                 ))}
               </ul>
             </div>
-          )}
-          <div>
-            <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
-              What stays
-            </h4>
-            <ul className="flex flex-col gap-1.5">
-              {staysItems.map((item, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-[13px] text-neutral-600 dark:text-neutral-400"
-                >
-                  <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
-        </div>
+        )}
 
-        <div className="flex flex-col gap-2 border-t border-neutral-100 p-6 pt-4 dark:border-neutral-800">
+        <div className="flex flex-col gap-2 border-t border-neutral-100 p-6 pt-3 dark:border-neutral-800">
           <button
             type="button"
             disabled={loading}
@@ -205,7 +232,7 @@ export default function RevertModal({
             {loading && (
               <div className="size-3.5 animate-spin rounded-full border border-white/40 border-t-white" />
             )}
-            {loading ? "Reverting…" : confirmLabel}
+            {loading ? loadingLabel : confirmLabel}
           </button>
 
           <button
@@ -217,16 +244,6 @@ export default function RevertModal({
             Cancel
           </button>
         </div>
-
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => onCloseRef.current()}
-          aria-label="Close"
-          className="absolute end-3 top-3 flex size-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 disabled:pointer-events-none disabled:opacity-40 dark:text-neutral-500 dark:hover:bg-white/8"
-        >
-          <X className="size-5" strokeWidth={2.5} />
-        </button>
       </div>
     </div>,
     document.body,

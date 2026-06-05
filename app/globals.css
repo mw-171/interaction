@@ -11,6 +11,7 @@
   --font-sans: var(--font-open-runde);
   --font-exposure: var(--font-fraunces);
   --animate-fade-in: fade-in 0.35s ease-out both;
+  --animate-pop-in: pop-in 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fade-in {
@@ -24,11 +25,39 @@
   }
 }
 
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: rgb(16, 16, 18);
     --foreground: #ededed;
+  }
+}
+
+/* Reserve scrollbar gutter at all times so toggling body-scroll-lock (modals,
+   etc.) or content height changes don't shift layout horizontally. */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Tailwind v4 removed the automatic cursor:pointer on buttons. Restore it
+   for all interactive elements so hover always communicates clickability. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  [role="menuitem"]:not(:disabled),
+  summary {
+    cursor: pointer;
   }
 }
 

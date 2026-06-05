@@ -1,27 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityRow, ActivityRowSkeleton } from "./components/activity-row";
 import type { ActivityRowProps } from "./components/activity-row";
+import SearchBar from "./components/search-bar";
 import { DUMMY_ITEMS } from "./data/dummy";
 
-type Item = Omit<ActivityRowProps, "onRevert"> & { _id: string };
+type BaseItem = Omit<ActivityRowProps, "onRevert" | "onRestore">;
+type Item = BaseItem & { _id: string; original?: BaseItem };
 
-const SKELETON_COUNT = 3;
+const SKELETON_COUNT = 4;
 const REVERT_DELAY_MS = 1200;
 const AFTER_MODAL_CLOSE_MS = 300; // modal transition (200ms) + small buffer
+const SEARCH_DEBOUNCE_MS = 250;
+
+function stripRuntime(item: Item): BaseItem {
+  const { _id, original, ...rest } = item;
+  void _id;
+  void original;
+  return rest;
+}
+
+// Module-level so the unique id / timestamp helpers stay out of render purity checks.
+let entryCounter = 0;
+function makeEntryId(prefix: string): string {
+  entryCounter += 1;
+  return `${prefix}-${Date.now()}-${entryCounter}`;
+}
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function scrollToTop(): void {
+  if (typeof window === "undefined") return;
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+}
 
 export default function Home() {
   const [items, setItems] = useState<Item[] | null>(null);
+  // Entries whose action has already been taken — they no longer show a menu.
   const [revertedIds, setRevertedIds] = useState<Set<string>>(new Set());
+  const [restoredIds, setRestoredIds] = useState<Set<string>>(new Set());
+
+  // Search state: `query` updates on every keystroke, `debouncedQuery` is what
+  // we actually filter by. While they differ we show skeletons, mirroring the
+  // initial fetch animation.
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(
-      () => setItems(DUMMY_ITEMS.map((item, i) => ({ ...item, _id: `item-${i}` }))),
-      1500
+      () =>
+        setItems(DUMMY_ITEMS.map((item, i) => ({ ...item, _id: `item-${i}` }))),
+      1500,
     );
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const filteredItems = useMemo(() => {
+    if (!items) return null;
+    const q = debouncedQuery.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((item) => {
+      if (item.actor.toLowerCase().includes(q)) return true;
+      return item.details?.some((d) => d.label.toLowerCase().includes(q));
+    });
+  }, [items, debouncedQuery]);
+
+  // True while the user is typing — we haven't applied the latest query yet.
+  const searching = query !== debouncedQuery;
+  // Show skeletons during initial fetch AND while debouncing a new query.
+  const showSkeletons = items === null || searching;
 
   function handleRevert(item: Item): Promise<void> {
     return new Promise((resolve) => {
@@ -30,50 +85,98 @@ export default function Home() {
         setRevertedIds((prev) => new Set([...prev, item._id]));
         resolve();
 
-        // Add the new timeline entry after the modal finishes closing
+        // Add the new timeline entry after the modal finishes closing.
+        // A reverted integration disconnects it (show the chip); a reverted
+        // recipe removes nothing, so it carries no details.
         setTimeout(() => {
+          const isIntegration = item.kind === "integration";
           const revertedEntry: Item = {
-            _id: `reverted-${item._id}-${Date.now()}`,
+            _id: makeEntryId(`reverted-${item._id}`),
             icon: item.icon,
             iconColor: item.iconColor,
             actor: item.actor,
+            kind: item.kind,
+            recipeSlug: item.recipeSlug,
             action: "was reverted",
-            timestamp: new Date().toISOString(),
+            timestamp: nowIso(),
             description: item.description,
-            details: item.details?.map((d) => ({ ...d, id: `${d.id}-rev` })),
+            details: isIntegration
+              ? item.details?.map((d) => ({ ...d, id: `${d.id}-rev` }))
+              : undefined,
+            original: stripRuntime(item),
           };
-          setItems((prev) => (prev ? [revertedEntry, ...prev] : [revertedEntry]));
+          setItems((prev) =>
+            prev ? [revertedEntry, ...prev] : [revertedEntry],
+          );
+          scrollToTop();
         }, AFTER_MODAL_CLOSE_MS);
       }, REVERT_DELAY_MS);
     });
   }
 
-  function getOnRevert(item: Item) {
-    if (
-      item.action === "was reverted" ||
-      item.action.startsWith("re-verified") ||
-      revertedIds.has(item._id)
-    ) {
-      return undefined;
-    }
-    return () => handleRevert(item);
+  // Undo a revert: add the original back as a fresh entry that can be reverted again.
+  function handleRestore(item: Item) {
+    if (!item.original) return;
+    setRestoredIds((prev) => new Set([...prev, item._id]));
+    const restoredEntry: Item = {
+      ...item.original,
+      _id: makeEntryId(`restored-${item._id}`),
+      timestamp: nowIso(),
+    };
+    setItems((prev) => (prev ? [restoredEntry, ...prev] : [restoredEntry]));
+    scrollToTop();
   }
 
+  function getHandlers(item: Item): {
+    onRevert?: () => Promise<void>;
+    onRestore?: () => void;
+  } {
+    if (item.action === "was reverted") {
+      if (restoredIds.has(item._id) || !item.original) return {};
+      return { onRestore: () => handleRestore(item) };
+    }
+    if (revertedIds.has(item._id)) return {};
+    return { onRevert: () => handleRevert(item) };
+  }
+
+  const hasNoMatches =
+    !showSkeletons &&
+    filteredItems !== null &&
+    filteredItems.length === 0 &&
+    debouncedQuery.trim().length > 0;
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="mb-8 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-        Activity
-      </h1>
+    <main className="mx-auto max-w-2xl px-6 py-12">
+      <div className="mb-8 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+          Activity
+        </h1>
+        <SearchBar value={query} onChange={setQuery} />
+      </div>
       <div>
-        {items === null
-          ? Array.from({ length: SKELETON_COUNT }, (_, i) => (
-              <ActivityRowSkeleton
-                key={i}
-                isLast={i === SKELETON_COUNT - 1}
-                variant={i}
-              />
-            ))
-          : items.map((item, i) => (
+        {showSkeletons ? (
+          Array.from({ length: SKELETON_COUNT }, (_, i) => (
+            <ActivityRowSkeleton
+              key={i}
+              isLast={i === SKELETON_COUNT - 1}
+              variant={i}
+            />
+          ))
+        ) : hasNoMatches ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="py-12 text-center text-sm text-neutral-500 dark:text-neutral-400"
+          >
+            No activity matches “{debouncedQuery}”.
+          </p>
+        ) : (
+          filteredItems?.map((item, i) => {
+            const q = debouncedQuery.trim().toLowerCase();
+            const matchedIntegration =
+              q.length > 0 &&
+              !!item.details?.some((d) => d.label.toLowerCase().includes(q));
+            return (
               <div
                 key={item._id}
                 className="animate-fade-in motion-reduce:animate-none"
@@ -81,12 +184,16 @@ export default function Home() {
               >
                 <ActivityRow
                   {...item}
-                  isLast={i === items.length - 1}
-                  onRevert={getOnRevert(item)}
+                  isLast={i === filteredItems.length - 1}
+                  forceExpanded={matchedIntegration}
+                  {...getHandlers(item)}
                 />
               </div>
-            ))}
+            );
+          })
+        )}
       </div>
     </main>
   );
 }
+

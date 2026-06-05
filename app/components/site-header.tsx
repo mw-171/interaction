@@ -115,17 +115,6 @@ export function SiteHeader() {
             </a>
           </div>
         </div>
-
-        {/* Right: sidebar toggle (mobile) */}
-        <div className="items-center gap-7 flex md:hidden">
-          <button
-            type="button"
-            aria-label="Toggle Sidebar"
-            className="flex items-center justify-center pr-1"
-          >
-            <SidebarIcon />
-          </button>
-        </div>
       </header>
     </div>
   );
