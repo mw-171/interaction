@@ -10,7 +10,20 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-open-runde);
   --font-exposure: var(--font-fraunces);
+  --animate-fade-in: fade-in 0.35s ease-out both;
 }
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 @media (prefers-color-scheme: dark) {
   :root {
