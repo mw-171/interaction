@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { ArrowUpRight, ChevronDown, MoreVertical, Undo2 } from "lucide-react";
 import RevertModal from "./revert-modal";
 
 const RELATIVE_DAY_LIMIT = 3;
+const MENU_TRANSITION_MS = 150;
 
 function formatRelativeTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
@@ -116,8 +117,37 @@ function RowMenu({
   triggerRef: React.RefObject<HTMLButtonElement | null>;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRef = useRef<HTMLButtonElement>(null);
+
+  // Keep the menu in the DOM through its exit so both open and close animate.
+  // Mount in the closed state, flip to visible two frames later; on close flip
+  // back, then unmount after the transition.
+  useLayoutEffect(() => {
+    let raf1: number | null = null;
+    let raf2: number | null = null;
+    let t: number | null = null;
+
+    if (open) {
+      raf1 = requestAnimationFrame(() => {
+        setMounted(true);
+        raf2 = requestAnimationFrame(() => setVisible(true));
+      });
+      return () => {
+        if (raf1 !== null) cancelAnimationFrame(raf1);
+        if (raf2 !== null) cancelAnimationFrame(raf2);
+      };
+    }
+
+    raf1 = requestAnimationFrame(() => setVisible(false));
+    t = window.setTimeout(() => setMounted(false), MENU_TRANSITION_MS);
+    return () => {
+      if (raf1 !== null) cancelAnimationFrame(raf1);
+      if (t !== null) clearTimeout(t);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -159,11 +189,11 @@ function RowMenu({
         <MoreVertical className="size-4" />
       </button>
 
-      {open && (
+      {mounted && (
         <div
           role="menu"
           aria-label={`Actions for ${actor}`}
-          className="absolute right-0 top-8 z-20 origin-top-right rounded-xl border border-neutral-200 bg-[rgb(255,253,250)] p-1 shadow-[0_4px_12px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.08)] animate-pop-in motion-reduce:animate-none dark:border-neutral-800 dark:bg-[rgb(16,16,18)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+          className={`absolute right-0 top-8 z-20 origin-top-right rounded-xl border border-neutral-200 bg-[rgb(255,253,250)] p-1 shadow-[0_4px_12px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.08)] transition-[scale,opacity] duration-150 ease-out motion-reduce:transition-none dark:border-neutral-800 dark:bg-[rgb(16,16,18)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.4)] ${visible ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
         >
           <button
             ref={itemRef}

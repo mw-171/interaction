@@ -11,7 +11,6 @@
   --font-sans: var(--font-open-runde);
   --font-exposure: var(--font-fraunces);
   --animate-fade-in: fade-in 0.35s ease-out both;
-  --animate-pop-in: pop-in 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fade-in {
@@ -25,18 +24,6 @@
   }
 }
 
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-
 @media (prefers-color-scheme: dark) {
   :root {
     --background: rgb(16, 16, 18);
@@ -48,6 +35,14 @@
    etc.) or content height changes don't shift layout horizontally. */
 html {
   scrollbar-gutter: stable;
+}
+
+/* Kill horizontal overflow at the root. Use`clip` rather than `hidden` 
+  so neither becomes a scroll container — vertical
+scrolling stays on the viewport, untouched. */
+html,
+body {
+  overflow-x: clip;
 }
 
 /* Tailwind v4 removed the automatic cursor:pointer on buttons. Restore it

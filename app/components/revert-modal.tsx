@@ -51,23 +51,28 @@ export default function RevertModal({
   });
 
   useLayoutEffect(() => {
-    let raf: number | null = null;
+    let raf1: number | null = null;
+    let raf2: number | null = null;
     let t: number | null = null;
 
     if (open) {
-      raf = requestAnimationFrame(() => {
+      // Mount in the closed state so it paints first, then flip to visible on
+      // the next frame. Setting both in the same frame renders already-open and
+      // skips the enter transition.
+      raf1 = requestAnimationFrame(() => {
         setMounted(true);
-        setVisible(true);
+        raf2 = requestAnimationFrame(() => setVisible(true));
       });
       return () => {
-        if (raf !== null) cancelAnimationFrame(raf);
+        if (raf1 !== null) cancelAnimationFrame(raf1);
+        if (raf2 !== null) cancelAnimationFrame(raf2);
       };
     }
 
-    raf = requestAnimationFrame(() => setVisible(false));
+    raf1 = requestAnimationFrame(() => setVisible(false));
     t = window.setTimeout(() => setMounted(false), MODAL_TRANSITION_MS);
     return () => {
-      if (raf !== null) cancelAnimationFrame(raf);
+      if (raf1 !== null) cancelAnimationFrame(raf1);
       if (t !== null) clearTimeout(t);
     };
   }, [open]);
