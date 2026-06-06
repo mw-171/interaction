@@ -14,6 +14,7 @@ const SKELETON_COUNT = 8;
 const REVERT_DELAY_MS = 1200;
 const AFTER_MODAL_CLOSE_MS = 300; // modal transition (200ms) + small buffer
 const SEARCH_DEBOUNCE_MS = 250;
+const ENTER_MS = 300; // entrance transition for a freshly added timeline entry
 
 function stripRuntime(item: Item): BaseItem {
   const { _id, original, ...rest } = item;
@@ -87,6 +88,31 @@ export default function Home() {
   // Entries whose action has already been taken — they no longer show a menu.
   const [revertedIds, setRevertedIds] = useState<Set<string>>(new Set());
   const [restoredIds, setRestoredIds] = useState<Set<string>>(new Set());
+  // Entrance animation phase for newly added entries: "enter" = painted
+  // collapsed, "open" = transitioning to full height. Absent = settled.
+  const [entering, setEntering] = useState<Record<string, "enter" | "open">>(
+    {},
+  );
+
+  // Slide a freshly added entry in: render it collapsed, flip to open on the
+  // next frame so the height/opacity transition runs, then drop it from the map
+  // once the transition is done (so it's no longer wrapped in an overflow clip).
+  function animateIn(id: string) {
+    setEntering((m) => ({ ...m, [id]: "enter" }));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() =>
+        setEntering((m) => (id in m ? { ...m, [id]: "open" } : m)),
+      ),
+    );
+    window.setTimeout(() => {
+      setEntering((m) => {
+        if (!(id in m)) return m;
+        const next = { ...m };
+        delete next[id];
+        return next;
+      });
+    }, ENTER_MS + 60);
+  }
 
   // Search state: `query` updates on every keystroke, `debouncedQuery` is what
   // we actually filter by. While they differ we show skeletons, mirroring the
@@ -153,6 +179,7 @@ export default function Home() {
           setItems((prev) =>
             prev ? [revertedEntry, ...prev] : [revertedEntry],
           );
+          animateIn(revertedEntry._id);
           scrollToTop();
         }, AFTER_MODAL_CLOSE_MS);
       }, REVERT_DELAY_MS);
@@ -169,6 +196,7 @@ export default function Home() {
       timestamp: nowIso(),
     };
     setItems((prev) => (prev ? [restoredEntry, ...prev] : [restoredEntry]));
+    animateIn(restoredEntry._id);
     scrollToTop();
   }
 
@@ -222,20 +250,39 @@ export default function Home() {
               const matchedIntegration =
                 q.length > 0 &&
                 !!item.details?.some((d) => d.label.toLowerCase().includes(q));
+
+              const phase = entering[item._id];
+              // Initial-load entries (ids "item-N") get the staggered fade;
+              // dynamically added entries slide in via height/opacity instead.
+              const isInitial = item._id.startsWith("item-");
+
+              let outerClass = "";
+              let outerStyle: React.CSSProperties | undefined;
+              let innerClass = "";
+              if (phase) {
+                outerClass = `grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+                  phase === "open"
+                    ? "[grid-template-rows:1fr] opacity-100"
+                    : "[grid-template-rows:0fr] opacity-0"
+                }`;
+                innerClass = "min-h-0 overflow-hidden";
+              } else if (isInitial) {
+                outerClass = "animate-fade-in motion-reduce:animate-none";
+                outerStyle = { animationDelay: `${Math.min(i, 8) * 50}ms` };
+              }
+
               return (
-                <div
-                  key={item._id}
-                  className="animate-fade-in motion-reduce:animate-none"
-                  style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}
-                >
-                  <ActivityRow
-                    {...item}
-                    stops={computeStops(item, items ?? [])}
-                    stays={computeStays(item, items ?? [])}
-                    isLast={i === filteredItems.length - 1}
-                    forceExpanded={matchedIntegration}
-                    {...getHandlers(item)}
-                  />
+                <div key={item._id} className={outerClass} style={outerStyle}>
+                  <div className={innerClass}>
+                    <ActivityRow
+                      {...item}
+                      stops={computeStops(item, items ?? [])}
+                      stays={computeStays(item, items ?? [])}
+                      isLast={i === filteredItems.length - 1}
+                      forceExpanded={matchedIntegration}
+                      {...getHandlers(item)}
+                    />
+                  </div>
                 </div>
               );
             })
